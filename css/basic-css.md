@@ -37,14 +37,17 @@
 
  * block: (display:block)
    * Elements are placed vertically one after the other
-   * top, buttom, left and right are NOT obeyed (they are in relative)
    * margin:top and margin:bottom can be used to set margins
 
  * inline: (display:inline)
+   * to be used for simple text only!
    * Elements placed horizontally, one after the other
-   * A set of inline boxes are enclosed in a "line box"
-   * A set of inline boxes might be split into several "line boxes" (see: multi-lines)
+   * A set of inline boxes are enclosed in a "line box", a set of inline boxes might be split into several "line boxes" (see: multi-lines)
    * The height of the line box can be set with line-height
+
+ * inline-block (display: inline-block)
+   *  Makes a block element inline (will display one after the other), but preserves block capabilities such as setting width and height, top and bottom margins, paddings etc.
+   * Important when turning existing block elements to inline, or browser might assign 0 height if they contain no text for example
 
 Code examples:
 
