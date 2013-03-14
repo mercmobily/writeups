@@ -46,6 +46,7 @@
    * A set of inline boxes might be split into several "line boxes" (see: multi-lines)
    * The height of the line box can be set with line-height
 
+
      /* Static: parameters top, bottom, left, right are NOT obeyed */
      .something {
        position: static;
@@ -59,6 +60,7 @@
        margin: 5em;
        border: 1px solid #f00;
      }
+
 
 
 ### ABSOLUTE AND FIXED POSITIONING:
