@@ -47,14 +47,12 @@
    * The height of the line box can be set with line-height
 
 
-     /* Static: parameters top, bottom, left, right are NOT obeyed */
      .something {
        position: static;
        margin-top: 5em;      /* Note: in overlapping margins, the margin will be the greater of the two  */
        margin-bottom: 10em;
      }
 
-     /* relative: parameters top, bottom, left, right ARE obeyed */
      .something {
        position: relative;
        margin: 5em;
