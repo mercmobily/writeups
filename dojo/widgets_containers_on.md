@@ -49,8 +49,11 @@
 
 ## _WidgetBase and attributes
 
+## Containers, layout, etc.
 
-### Containers (`_Container.js`) -- base for `_ContentPane` AND `_LayoutWidget`
+### Containers
+
+#### `_Container.js` -- base for `_ContentPane` AND `_LayoutWidget`
 
 - **CONTRACT**: It implements `addChild()`, `removeChild()`, `hasChildren()`, `getIndexOfChild()`, AND sets `this.containerNode`
 - It is a mixin for widgets that contain HTML and/or a set of widget children
@@ -60,8 +63,6 @@
    ContentPane is visible or not, and `resize()` doesn't work on hidden tabs). `addChild()` also doesn't call `_checkIfSingleChild()` 
    to resize a single child widget to fill the whole ContentPane.
 
-
-### `ContentPane` (a `isLayoutContainer`)
 
 #### `_ContentPaneResizeMixin`
 - **CONTRACT**: Defines  `isLayoutContainer`: this widget will call `resize()` on its children when they become visible, + follow `doLayout`
@@ -78,19 +79,19 @@
 - Simply `WidgetBase` + `_Container` + `_ContentPaneResizeMixin` (which honours the `isLayoutContainer` contract).
 
 
-### `_LayoutWidget` (a `isLayoutContainer`)
+### Layout widgets
 
 #### `_Contained`
 - It defines `getPreviousSibling()`, `getNextSibling()`, `getIndexInParent()`
 - Useful for widgets that are contained by a `isLayoutContainer` widget
 
-#### `_LayoutWidget`
+#### `_LayoutWidget` ( a `isLayoutContainer`)
 - It includes `Widgetbase` + `_Container` + `_Contained` + functions to honour the `isLayoutContainer` contract
 - **CONTRACT**: Defines `isLayoutContainer`: this widget will call `resize()` on its children when they become visible, + follow `doLayout`
     - **NOTE**: unlike `_ContentPaneMixin`, children widgets might well be invisible (see: `TabContainer` etc.).
 - If it's not the child of a `isLayoutContainer`, will listen to the viewport's `resize` event and run `this.resize()`
 - When `this.resize()`, it will call `this.layout()`. It will be up to the Widget class to implement `this.layout()` to resize children
-- It's basically up to `this.layout()` to work on layout and call onShow() on visible child (see CONTRACT)
+- It's basically up to `this.layout()` to work on layout and call _onShow() on visible child (see CONTRACT)
 - It extends `addChild()` and `removeChild()` so that it adds (and remove) the right DOM classes (`parent.baseClass+'-child'` and
   `parent.baseClass+'-'+child.baseClass`) for theming
 - If `doLayout`:
