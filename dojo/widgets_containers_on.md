@@ -140,9 +140,9 @@ Note: this is a very simplified description of what `_StackContainer` is, to giv
     - `this.on('success', listener)` 
         - **TEMPORARILY, before Dojo 2** IF this['on'+success] exists, will run `aspect.after(this, 'onsuccess', listener)` to piggyback on widget methods (e.g. `this.onClick()` **OR**
         - Runs `dojo/on(this.domNode, 'event', listener)`. So, it will get `this.domNode` hooked up to `event` (which will fire `listener`).
-    - `this.emit('event')`
-        - Calls `this['on'+event]` if it exists in the widget (note the lack of capitalisation in 'event'). The event **will _not_ bubble up synthetically** in any case (unlike synthetic events emitted with `dojo/emit()` over widgets) **AND**
-        - Runs `dojo/on.emit(this.domNode, 'event', event)`. So, it emits down to `this.domNode`, through the widget's DOM
+    - `this.emit('type')`
+        - Calls `this['on'+type]`, that us this.on if it exists in the widget (note the lack of capitalisation in 'event'). The event **will _not_ bubble up synthetically** in any case (unlike synthetic events emitted with `dojo/emit()` over widgets) **AND**
+        - Runs `dojo/on.emit(this.domNode, toLowerCase('type'), event)`. So, it emits down to `this.domNode`, through the widget's DOM. NOTE THAT `toLowerCase`!!!
 
 *** QUESTION: with `widget.emit()`, doesn't this mean that in some cases TWO callbacks will be called when emitting 'success': one will be the listener set up with `widget.on('success', listener)` and one will be the widget's `this.onsuccess()` method? Is that the behaviour to expect?
 
