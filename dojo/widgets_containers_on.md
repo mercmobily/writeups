@@ -124,10 +124,11 @@ Note: this is a very simplified description of what `_StackContainer` is, to giv
             * An object with `this.addEventListener()` defined: it will use it using the same API as DOM, but it might be anything. **OR**
             * An object with `this.attachEvent()` defined (this is for retarded IE which up to v.9 didn't have `this.addEventListener`) **OR**
             * It will _fail_
-    - `dojo/emit(target, 'event', listener)`
+    - `dojo/on.emit(target, 'event', event)`
         - `target` can be:
             - An object with `this.dispatchEvent()` defined (it's a DOM node): it will use native event emission (DOM) **OR**
             - An object with `this['on'+event]`: it will call that, _and_ **it will bubble up** to `parentNode` if event is meant to bubble up. This is done 100% synthetically, by following parentNode attributes.
+            - `event` can be a simple object, which is then "transformed" into a native event. E.g. it could have `{bubbles:true}` and nothing more 
 
 *** QUESTION: Why doesn't `dojo/on.emit()` get delegated to the widget just like `dojo/on()` is? It seems like the obvious thing to do -- with the object's `this.emit()` which then emits through the DOM, which will then bubble things up if requested... so that the "manual" bubbling wouldn't even be necessary?
 
