@@ -132,7 +132,7 @@ Note: this is a very simplified description of what `_StackContainer` is, to giv
 
 *** QUESTION: Why doesn't `dojo/on.emit()` get delegated to the widget just like `dojo/on()` is? It seems like the obvious thing to do -- with the object's `this.emit()` which then emits through the DOM, which will then bubble things up if requested... so that the "manual" bubbling wouldn't even be necessary?
 
-*** QUESTION: `dojo/emit(target, 'event', listener)` seems to call, synthetically for objects, onevent rather than onEvent. Didn't this use to be onEvent? Is capitalisation after "on" going away as a convention for Dojo 2.0?
+*** QUESTION: `dojo/emit(target, 'event', event)` seems to call, synthetically for objects, onevent rather than onEvent. Didn't this use to be onEvent? Is capitalisation after "on" going away as a convention for Dojo 2.0?
 
 ### _WidgetBase
 
@@ -142,7 +142,7 @@ Note: this is a very simplified description of what `_StackContainer` is, to giv
         - Runs `dojo/on(this.domNode, 'event', listener)`. So, it will get `this.domNode` hooked up to `event` (which will fire `listener`).
     - `this.emit('event')`
         - Calls `this['on'+event]` if it exists in the widget (note the lack of capitalisation in 'event'). The event **will _not_ bubble up synthetically** in any case (unlike synthetic events emitted with `dojo/emit()` over widgets) **AND**
-        - Runs `dojo/on.emit(this.domNode, 'event', listener)`. So, it emits down to `this.domNode`, through the widget's DOM
+        - Runs `dojo/on.emit(this.domNode, 'event', event)`. So, it emits down to `this.domNode`, through the widget's DOM
 
 *** QUESTION: with `widget.emit()`, doesn't this mean that in some cases TWO callbacks will be called when emitting 'success': one will be the listener set up with `widget.on('success', listener)` and one will be the widget's `this.onsuccess()` method? Is that the behaviour to expect?
 
