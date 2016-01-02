@@ -2,6 +2,10 @@
 
 This sums up Polymer's developers guide. To "know" Polymer you should know everything here 100%, and all of the API calls by heart.
 
+TODO:
+- Talk about decorator patterns:
+  https://github.com/Polymer/polymer/issues/1990
+
 ## Overview
 
 A basic element looks like this:
@@ -200,7 +204,7 @@ WATCH: https://github.com/Polymer/docs/issues/1456
 
 The element's basic initialization order for a given element is:
 
-- `created` callback  
+- `created` callback
 - local DOM initialized (This means that **local DOM** children are created, their property values are set as specified in the template, and `ready()` has been called on them)
 - `ready` callback
 - `factoryImpl` callback]
@@ -256,17 +260,17 @@ Example:
 
     <script>
 
-      Polymer({
+    Polymer({
 
-        is: 'x-custom',
+      is: 'x-custom',
 
-        hostAttributes: {
-          'string-attribute': 'Value',
-          'boolean-attribute': true
-          tabindex: 0
-        }
+      hostAttributes: {
+        'string-attribute': 'Value',
+        'boolean-attribute': true
+        tabindex: 0
+      }
 
-      });
+    });
 
     </script>
 
@@ -285,13 +289,15 @@ You can have declared properties by setting the `properties` property to your el
 
 **Setting the HTML attribute for the element will set the corresponding property in the element.** The property will be cast appropriatedly depending on the `type` of the property.
 
+**NOTE**: Deserialization occurs both at create time, and at runtime (for example, when the attribute is changed using setAttribute). However, it is encouraged that attributes only be used for configuring properties in static markup, and instead that properties are set directly for changes at runtime.
+
 When mapping attribute names to property names:
 
 * Attribute names are converted to lowercase property names. For example, the attribute `firstName` maps to firstname.
 
 * Attribute names with dashes are converted to `camelCase` property names by capitalizing the character following each dash, then removing the dashes. For example, the attribute `first-name` maps to `firstName`.
 
-**NOTE**: Deserialization occurs both at create time, and at runtime (for example, when the attribute is changed using setAttribute). However, it is encouraged that attributes only be used for configuring properties in static markup, and instead that properties are set directly for changes at runtime.
+* For a Boolean property to be configurable from markup, it must default to `false`. If it defaults to `true`, you cannot set it to `false` from markup, since the presence of the attribute, with or without a value, equates to `true`.
 
 ### How to declare properties
 
@@ -303,6 +309,7 @@ In its most basic usage, `properties` can have:
 
 Alternatively, it might have just the property name/constructor fields, which will act as `type` and `value`. E.g.:
 
+    <script>
     Polymer( {
 
       properties: {
@@ -320,6 +327,7 @@ Alternatively, it might have just the property name/constructor fields, which wi
         mainName: String,
       },
     })
+    </script>
 
 Since HTML attributes are mapped to properties, a user can configure declared properties from markup.
 
@@ -329,7 +337,7 @@ So, when typing:
 
 The `count` property of the element will be set to (numeral) 10. Note that casting happens thanks to the defined type (`Number`) in the `properties` object.
 
-**HTML attributes are constantly reflected on the element's declared properties**.So, doing:
+**HTML attributes are constantly reflected on the element's declared properties**. So, doing:
 
     myElement.setAttribute('count', 20 );
 
@@ -342,30 +350,358 @@ Dash attributes are converted to camelCase ones:
 Will set the property `mainName`.
 
 
+### Notifications
+
+You can enable the firing of an event called `propertyName-changed` when a property changes by adding `notify: true` to the property's definition. This event is also used by two-way data binding.
+
+For example:
+
+    <script>
+    Polymer( {
+
+      properties: {
+
+        is: 'my-element',
+
+        // Explicitly setting type and value
+        count: {
+          type: Number,
+          value: 10,
+          notify: true
+        }
+
+        user: String, // name/constructor pair
+
+        mainName: String,
+      },
+    })
+    </script>
+
+The event `count-changed` will be fired whenever `count` is changed.
+
+### Read-only properties
+
+When a property only “produces” data and never consumes data, this can be made explicit to avoid accidental changes from the host by setting the readOnly flag to true in the properties property definition. In order for the element to actually change the value of the property, it must use a private generated setter of the convention `_setProperty(value)`.
+
+    <script>
+      Polymer({
+
+        properties: {
+          response: {
+            type: Object,
+            readOnly: true,
+            notify: true
+          }
+        },
+
+        responseHandler: function(response) {
+          this._setResponse(response);
+        }
+
+      });
+    </script>
+
+
+### Computed properties {#computed-properties}
+
+Polymer supports virtual properties whose values are calculated from other properties.
+
+To define a computed property, add it to the `properties` object with a `computed` key mapping to a computing function:
+
+        fullName: {
+          type: String,
+          computed: 'computeFullName(first, last)'
+        }
+
+
+The function is provided as a string with dependent properties as arguments in parenthesis. The function will be called once for any change to the dependent properties.
+
+The computing function is not invoked until **all** dependent properties are defined (`!== undefined`). So each dependent properties should have a default `value` defined in `properties` (or otherwise be initialized to a non-`undefined` value) to ensure the property is computed.
+
+**Note:** The definition of a computing function looks like the definition of a [multi-property observer](#multi-property-observers), and the two act almost identically. The only difference is that the computed property function returns a value that's exposed as a virtual property. {: .alert .alert-info }
+
+    <dom-module id="x-custom">
+
+      <template>
+        My name is <span>{%raw%}{{fullName}}{%endraw%}</span>
+      </template>
+
+      <script>
+        Polymer({
+
+          is: 'x-custom',
+
+          properties: {
+            first: String,
+            last: String,
+
+            fullName: {
+              type: String,
+              // when `first` or `last` changes `computeFullName` is called once
+              // and the value it returns is stored as `fullName`
+              computed: 'computeFullName(first, last)'
+            }
+          },
+          computeFullName: function(first, last) {
+            return first + ' ' + last;
+          }
+        });
+      </script>
+    </dom-module>
+
+Arguments to computing functions may be simple properties on the element, as well as any of the arguments types supported by `observers`, including `paths`, `paths with wildcards` and `paths to array splices`.
+
+The arguments received by the computing function match those described in the sections referenced above.
+
+### Reflect from property to attribute
+
+Remember how **setting the HTML attribute for the element will set the corresponding property in the element.** This is true especially so that when defining elements declarative, e.g. `<my-element surname="Mobilyy">`, the `surname` property of the element is _also_ set to `Mobily` (and the property will be cast appropriatedly depending on the `type` of the property).
+
+In specific cases, it may be useful to keep an HTML attribute value in sync with a property value. This may be achieved by setting `reflectToAttribute: true` on a property in the `properties` configuration object. This will cause any change to the property to be serialized out to an attribute of the same name.
+
+    <script>
+      Polymer({
+
+        properties: {
+         response: {
+            type: Object,
+            reflectToAttribute: true
+         }
+        },
+
+        responseHandler: function(response) {
+          this.response = 'loaded';
+          // results in this.setAttribute('response', 'loaded');
+        }
+
+      });
+    </script>
+
+#### Attribute serialization
+
+When reflecting a property to an attribute or binding a property to an attribute, the property value is serialized to the attribute.
+
+By default, values are serialized according to value’s current type (regardless of the property’s type value):
+
+* `String`. No serialization required.
+* `Date` or `Number`. Serialized using  toString.
+* `Boolean`. Results in a non-valued attribute to be either set (true) or removed (false).
+* `Array` or Object`. Serialized using JSON.stringify.
+
+To supply custom serialization for a custom element, override your element’s `serialize` method.
+
 ### Observers
 
-YOU ARE HERE
+#### Basic observers
+
+Basic observers are achieved by adding an `observer` attribute to your property declaration, which represents the _name_ of the method used as the observer.
+
+For example:
+
+    <script>
+    Polymer({
+
+      is: 'my-observer',
+
+      properties: {
+        name: {
+          type: String,
+          observer: '_nameChanged'
+        },
+      },
+
+      _nameChanged: function(newValue, oldValue) {
+        console.log("The name has changed");
+      },
+
+    });
+    </script>
+
+Property change observation is achieved in Polymer by installing setters on the custom element prototype. So there is no need to use special setters to assign a value.
+
+NOTE: You can use `observer` for arrays and objects as well; however, it will only detect changes to what array/object is references (e.g. `this.anArray = [ 1, 2, 3 ]` or `this.anObject = { a:10 }`) rather than modifications to the contents of the object or array.
+
+#### Observing multuple properties
+
+You can set the same observer for multiple properties by adding elements to the `observers` element of your Polymer object:
+
+    <script>
+    Polymer({
+
+      is: 'my-observer',
+
+      properties: {
+        preload: Boolean,
+        src: String,
+        size: String
+      },
+
+      observers: [
+        'updateImage(preload, src, size)'
+      ],
+
+      _updateImage: function(preload, src, size) {
+        // ... do work using dependent values
+      }
+    });
+    </script>
+
+Polymer will parser the elements in `observers`, so that `this._updateImage()` will be called with the parameters `preload`, `src` and `size`. Note that:
+
+* Observers are not invoked until all dependent properties are defined (`!== undefined`). So each dependent properties should have a default value defined in properties (or otherwise be initialized to a non-undefined value) to ensure the observer is called.
+* Observers do not receive old values as arguments, only new values. Only single-property observers defined in the properties object receive both old and new values.
+
+#### Observing deep changes made to objects
+
+If you want to observe deep objects, you will need to use the same syntax as multiple observers, and specify an object path you want to observe; for example `_singleObserver( complex.s )` will be triggered when the attribute `s` of `this.complex` changes.
+
+Just like multiple observers, you can specify more than one attribute to watch; also, just like multiple observers, when having more than one parameter the observer will only be triggered when all of the watched attrivutes are not `undefined`.
+
+For example:
+
+    <script>
+    Polymer({
+      is: 'my-observer',
+      properties: {
+        complex:  {
+          type: Object,
+          // Note: 'c' is missing on purpose
+          value: function() { return { s:1000, a: 20, b:30 } },
+        },
+      },
+
+      observers: [
+        '_singleObserver( complex.s )',
+        '_multipleObserver1( complex.a, complex.b )',
+        '_multipleObserver2( complex.a, complex.b, complex.c )',
+      ],
+
+      created: function(){
+        console.log("CREATED!");
+        THIS = this;
+      },
+
+      _singleObserver: function( s ){
+        console.log("(SINGLE) VALUES: ", s );
+      },
+
+      _multipleObserver1: function( a, b ){
+        console.log("(MULTUPLE1) VALUES: ", a, b );
+      },
+
+      // ONLY INVOKED ONCE complex.c IS DEFINED
+      _multipleObserver2: function( a, b, c ){
+        console.log("(MULTUPLE2) VALUES: ", a, b, c );
+      },
+
+    })
+    </script>
+
+In order for Polymer to properly detect the sub-property change, the sub-property must be updated in one of the following two ways:
+
+* Via a property binding.
+* By calling `set`. Remember that you can pass a `path` to the `this.set()` method.
+
+For example:
+
+    this.set( 'complex.c', '1000');
 
 
+#### Watching multuple deep properties
 
+If you want to watch multiple sub-properties, you can use a wildcard when defining the observer's parameter. E.g. `_multipleObserver3( complex.d.* )` will make sure `_multipleObserver3` will be called whenever anything under `this.complex.d` changes:
 
+    <script>
+    Polymer({
+      is: 'my-observer',
+      properties: {
+        complex:  {
+          type: Object,
+          value: function() { return { d: { da: { daa: 91, dab:92 } , db: 80 } } },
+        },
+      },
 
-TO DOCUMENT:
+      observers: [
+        '_multipleObserver3( complex.d.* )',
+      ],
 
-* `reflectToAttribute`	Type: `boolean` Set to `true` to cause the corresponding attribute to be set on the host node when the property value changes. If the property value is Boolean, the attribute is created as a standard HTML boolean attribute (set if true, not set if false). For other property types, the attribute value is a string representation of the property value.
+      created: function(){
+        console.log("CREATED!");
+        THIS = this;
+      },
 
-* `readOnly`	Type: `boolean` If `true`, the property can't be set directly by assignment or data binding.
+      _multipleObserver3: function( s ){
+        console.log("(MULTUPLE3) VALUES: ", s );
+      }
 
-* `notify`	Type: `boolean` If `true`, the property is available for two-way data binding. In addition, an event, `propertyName-changed` is fired whenever the property changes.
+    })
+    </script>
 
-* `computed`	Type: `String`
-The value is interpreted as a method name and argument list. The method is invoked to calculate the value whenever any of the argument values changes.
+When you specify a path with a wildcard, the argument passed to your observer is a change record object with the following properties:
 
-* `observer`	Type: `String` The value is interpreted as a method name to be invoked when the property value changes. Property change handlers must be registered explicitly.
+* `path`. Path to the property that changed. You need this since any one of the sub-property may have changed.
+* `value`. New value of the path that changed.
+* `base`. The object matching the non-wildcard portion of the path. This is especially useful if you want to then change the changed attribute's value using `this.set()`
 
+#### Watching arrays
 
+In Javascript an array can be mutated using `push`, `pop`, `shift`, `unshift`, and `splice` (these functions are generally referred to as "splices"). To observe mutations to arrays specify a path to an array followed by ``.splices` as an argument to the observer function.
 
+For example:
 
+    <script>
+    Polymer({
+
+      is: 'my-observer',
+
+      properties: {
+        users: {
+          type: Array,
+          value: function() {
+            return [];
+          }
+        }
+      },
+
+      observers: [
+        '_usersAddedOrRemoved(users.splices)'
+      ],
+
+      created: function(){
+        console.log("CREATED!");
+        THIS = this;
+      },
+
+      _usersAddedOrRemoved: function( changeRecord ) {
+        console.log("(ARRAYOBSERVER) Here: ", changeRecord)
+      },
+
+      addUser: function() {
+        this.push('users', {name: "Jack Aubrey"});
+      }
+
+    });
+    </script>
+
+The `changeRecord` parameter is tricky. To understand it fully, keep in mind the syntax of the array-changing function `splice()` in Javascript, which has the following parameters:
+
+* `index`. The position where items will be added/remove
+* `howmany`. How many items will be removed, from `index`
+* `item1, ..., itemX`. The itesm to be added, from `index`
+
+Keeping this in mind `changeRecord` will have:
+
+* `indexSplices`. Lists the set of changes that occurred to the array, in terms of array indicies. Each `indexSplices` record contains the following properties:
+  * `index`. Position where the splice started.
+  * `removed`. Array of removed items.
+  * `addedCount`. Number of new items inserted at `index`.
+* `keySplices`. Lists the set of changes that occurred to the array in terms of “keys” used by Polymer for identifying array elements. Each `keySplices` record contains the following properties:
+  * `added`. Array of added keys.
+  * `removed`. Array of removed keys.
+
+NOTE: This seems wrong, and I couldn't work out what is "right". Documentation seems totally wrong, and even the basic example doesn't work. Ticket open:  https://github.com/Polymer/polymer/issues/3239 (Arrays not working)
+
+Note that I used `this.push()` to push into the array: Polymer has the equivalent of the splices functions in Javascript, with the bonus that the registered observer will actually get called.
 
 ## Local DOM
 
@@ -584,14 +920,25 @@ The observeNodes method behaves slightly differently depending on the node being
 * For any other node, the callback is called when the node’s effective children change.
 * The observer function will be called the first time with *all* of the elements contained in the observed one.
 
-
 ## Styling
+
+
 
 ## Events
 
 ## Data binding
 
+https://github.com/Polymer/polymer/issues/2122
+
+https://github.com/Polymer/polymer/issues/2127
 ## Behaviours
+
+
+
+
+
+
+
 
 ## Utility function
 
