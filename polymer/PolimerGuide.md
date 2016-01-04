@@ -922,6 +922,22 @@ The observeNodes method behaves slightly differently depending on the node being
 
 ## Styling
 
+Quick intro to CSS.
+
+# CSS Basics
+
+* Where then can be defined
+* Cascading order:  http://www.w3.org/TR/CSS21/cascade.html#cascading-order
+* Selectors: http://www.w3.org/TR/CSS21/selector.html
+* CSS layout basics
+
+To actually know CSS in practice:
+* [http://www.w3.org/community/webed/wiki/Main_Page#CSS](CSS Web Standards Curriculum])
+* [https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Getting_started](MDN's tutorials)
+
+Specs of 2.1: http://www.w3.org/TR/2011/REC-CSS2-20110607/
+Specs for 3: There is NO 3! http://www.w3.org/TR/css3-roadmap/
+
 
 
 ## Events
@@ -931,12 +947,8 @@ The observeNodes method behaves slightly differently depending on the node being
 https://github.com/Polymer/polymer/issues/2122
 
 https://github.com/Polymer/polymer/issues/2127
+
 ## Behaviours
-
-
-
-
-
 
 
 
