@@ -201,6 +201,7 @@ Note: you mustn't redefine a Polymer component's `createdCallback()`, `attachedC
 ### Initialization order and timing {#initialization-order}
 
 WATCH: https://github.com/Polymer/docs/issues/1456
+APPLY EXTRA WRITING: https://github.com/Polymer/docs/pull/1506
 
 The element's basic initialization order for a given element is:
 
@@ -418,7 +419,7 @@ The function is provided as a string with dependent properties as arguments in p
 
 The computing function is not invoked until **all** dependent properties are defined (`!== undefined`). So each dependent properties should have a default `value` defined in `properties` (or otherwise be initialized to a non-`undefined` value) to ensure the property is computed.
 
-**Note:** The definition of a computing function looks like the definition of a [multi-property observer](#multi-property-observers), and the two act almost identically. The only difference is that the computed property function returns a value that's exposed as a virtual property. {: .alert .alert-info }
+**Note:** The definition of a computing function looks like the definition of a [multi-property observer](#multi-property-observers), and the two act almost identically. The only difference is that the computed property function returns a value that's exposed as a virtual property.
 
     <dom-module id="x-custom">
 
@@ -748,11 +749,11 @@ Programmatically, the local DOM is in `this.root`.
 
 Light DOM is whatever is in the actual element when it's being used.
 
-<test-component>
-    <p id="light-1">One</p>
-    <p id="light-2">Two</p>
-    <p id="light-3">Three</p>
-</test-component>
+    <test-component>
+        <p id="light-1">One</p>
+        <p id="light-2">Two</p>
+        <p id="light-3">Three</p>
+    </test-component>
 
 Note that not all of the elements might end up getting rendered (or "composed"), since the local DOM might not pick them (for example `<p id="light-3">Three</p>` will be 100% ignored and therefore invisible/unrendered).
 
@@ -760,7 +761,7 @@ Programmatically, the light DOM is in a fragment.
 
 #### Composed DOM and access elements
 
-The composed DOM is the result of the local DOM with bits of the light DOM inserted when appropriate, depending on the <content> tags.
+The composed DOM is the result of the local DOM with bits of the light DOM inserted when appropriate, depending on the `<content>` tags.
 
 Programmatically, the light dom is in `this` (the element itself) which will effectively be the result of local DOM + light DOM.
 
@@ -912,7 +913,7 @@ Use the DOM API’s observeNodes method to track when children are added and rem
 
     Polymer.dom(node).unobserveNodes(this.anObserver);
 
-The observeNodes method behaves slightly differently depending on the node being observed:
+The `observeNodes` method behaves slightly differently depending on the node being observed:
 
 * If the node being observed is a content node, the callback is called when the content node’s distributed children change.
   * If `<content>` is used without a selector, then anything added to the light DOM will trigger
@@ -922,25 +923,319 @@ The observeNodes method behaves slightly differently depending on the node being
 
 ## Styling
 
-Quick intro to CSS.
+Styling using CSS is a huge subject in its own right. One of the problems of CSS is that it's difficult to have proper _encapsulation_: styles from any loaded stylesheet will be applied to every matching selector within the page, according to their specificity.
 
-# CSS Basics
+While in this section I won't cover any of the _visual results_ of what CSS directives do to a page, I will cover CSS seen as a list of styles applied to elements in a web page according to the specified selectors.
 
-* Where then can be defined
-* Cascading order:  http://www.w3.org/TR/CSS21/cascade.html#cascading-order
-* Selectors: http://www.w3.org/TR/CSS21/selector.html
-* CSS layout basics
+The "box model", floats, etc. can be learned here:
 
-To actually know CSS in practice:
+* [http://learn.shayhowe.com/](Shay Howe's tutorials, the best in the west at the moment)
 * [http://www.w3.org/community/webed/wiki/Main_Page#CSS](CSS Web Standards Curriculum])
 * [https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Getting_started](MDN's tutorials)
+* [http://matthewjamestaylor.com/blog/perfect-multi-column-liquid-layouts](Responsive layouts)
+* [http://flatuicolors.com/](Paper colours)
 
-Specs of 2.1: http://www.w3.org/TR/2011/REC-CSS2-20110607/
-Specs for 3: There is NO 3! http://www.w3.org/TR/css3-roadmap/
+In terms of CSS standard:
 
+* [http://www.w3.org/TR/CSS2/](Specs of 2.1)
+* [http://www.w3.org/TR/css3-roadmap/](Specs for 3 -- except, there is NO 3!)
+
+### CSS Basics
+
+In this section I will cover basic CSS usage in terms of syntax and grammar.
+To apply CSS rules to elements, you have 4 ways:
+
+#### How to import CSS
+
+##### CSS via external stylesheet
+
+    <link rel="stylesheet" type="text/css" href="mystyles.css" media="screen" />
+
+##### CSS embedded in the page itself
+
+````
+    <style media="screen" type="text/css">
+     ... CSS styling here ...
+    </style>
+````
+
+##### CSS inline
+
+
+You can add styling rules directly to the HTML itself.
+
+````
+    <h2 style="color:red;">This will come up red</h2>
+````
+
+##### Importing CSS from CSS
+
+Finally, you can import a stylesheet directly from another stylesheet:
+
+    @import "newstyles.css";
+
+#### CSS Syntax
+
+In all cases except inline CSS, for each CSS rule you define:
+
+* A selector (or a list of selectors, comma separated)
+* A list of properties that will be applied to that selector
+
+For example, you may have:
+
+    p, li {
+      background: red;
+    }
+
+Here, `p` and `li` are the two selectors (which in this case mean "every `p` tag" and "every `li` tag") to which the property `background: red` will be applied.
+
+What property is meanigful depends on the tag itself.
+
+### CSS Cascading order
+
+The order in which directives are applied is really important. From [the cascading order specs for 2.1](http://www.w3.org/TR/CSS21/cascade.html#cascading-order):
+
+-----------
+To find the value for an element/property combination, user agents must apply the following sorting order:
+
+* Find all declarations that apply to the element and property in question, for the target media type. Declarations apply if the associated selector matches the element in question and the target medium matches the media list on all @media rules containing the declaration and on all links on the path through which the style sheet was reached.
+* Sort according to importance (normal or important) and origin (author, user, or user agent). In ascending order of precedence:
+  * user agent declarations
+  * user normal declarations
+  * author normal declarations
+  * author important declarations
+  * user important declarations
+* Sort rules with the same importance and origin by specificity of selector: more specific selectors will override more general ones. Pseudo-elements and pseudo-classes are counted as normal elements and classes, respectively.
+* Finally, sort by order specified: if two declarations have the same weight, origin and specificity, the latter specified wins. Declarations in imported style sheets are considered to be before any declarations in the style sheet itself.
+
+User agent declarations are the "browser defaults". Author declarations are the ones in the stylesheets. User declarations are the ones added by the user (for example, visually-impaired users might enlarge all writing). A declaration can be marked as important by adding `!important` ad the end of the line (for example `background: red !important;`).
+---------------
+
+The specifications talk about "specificity": that means how "precise" a selector is. I will talk about this more very shortly.
+
+### CSS Selectors
+
+Here are [selectors from the official documentation](http://www.w3.org/TR/CSS21/selector.html) (note that I changed the order a little, compared to the specs):
+
+````
+    *	`*` -- Matches any element.	Universal selector
+    *	`E` -- 	Matches any E element (i.e., an element of type E).	Type selectors
+    *	`DIV.warning` -- Language specific. (In HTML, the same as DIV[class~="warning"].)	Class selectors
+    *	`E#myid`	Matches any E element with ID equal to "myid".	ID selectors
+    *	`E F` -- 	Matches any F element that is a descendant of an E element.	Descendant selectors
+    *	`E > F` -- 	Matches any F element that is a child of an element E.	Child selectors
+    *	`E + F` -- Matches any F element immediately preceded by a sibling element E.	Adjacent selectors
+    *	`E:first-child` -- 	Matches element E when E is the first child of its parent.	The :first-child pseudo-class
+    *	`E:link E:visited` -- 	Matches element E if E is the source anchor of a hyperlink of which the target is not yet visited (`:link`) or already visited (`:visited`).	The link pseudo-classes
+    *	`E:active` `E:hover` `E:focus` -- Matches E during certain user actions.	The dynamic pseudo-classes
+    *	`E:lang(c)` -- Matches element of type E if it is in (human) language c (the document language specifies how language is determined).	The :lang() pseudo-class
+    *	`E[foo]` -- Matches any E element with the "foo" attribute set (whatever the value).	Attribute selectors
+    *	`E[foo="warning"]` -- Matches any E element whose "foo" attribute value is exactly equal to "warning".	Attribute selectors
+    *	`E[foo~="warning"]` -- Matches any E element whose "foo" attribute value is a list of space-separated values, one of which is exactly equal to "warning".	Attribute selectors
+    *	`E[lang|="en"]` -- Matches any E element whose "lang" attribute has a hyphen-separated list of values beginning (from the left) with "en".	Attribute selectors
+````
+
+Note that class selectors can also be `div.class1.class2` (meaning "has both classes").
+
+For example, here:
+
+````
+    html
+    .content p  { color: red; }
+````
+
+Means "an element `p`, contained by an element of class  `content`.
+A few selectors:
+
+* `#container > .box`
+* `article > p`
+* `a[href="http://google.com/"]`
+
+Please note that CSS3 adds more powerful selectors.
+
+### CSS selectors' specificity
+
+A selector's specificity is calculated as follows:
+
+------------------------
+* count 1 if the declaration is from is a 'style' attribute rather than a rule with a selector, 0 otherwise (= a) (In HTML, values of an element's "style" attribute are style sheet rules. These rules have no selectors, so a=1, b=0, c=0, and d=0.)
+* count the number of ID attributes in the selector (= b)
+* count the number of other attributes and [pseudo-classes](https://developer.mozilla.org/en-US/docs/Web/CSS/pseudo-classes) in the selector (= c)
+* count the number of element names and [pseudo-elements](https://developer.mozilla.org/en/docs/Web/CSS/Pseudo-elements) in the selector (= d)
+The specificity is based only on the form of the selector. In particular, a selector of the form "[id=p33]" is counted as an attribute selector (a=0, b=0, c=1, d=0), even if the id attribute is defined as an "ID" in the source document's DTD.
+
+Concatenating the four numbers a-b-c-d (in a number system with a large base) gives the specificity.
+
+Some examples:
+
+````
+     *             {}  /* a=0 b=0 c=0 d=0 -> specificity = 0,0,0,0 */
+     li            {}  /* a=0 b=0 c=0 d=1 -> specificity = 0,0,0,1 */
+     li:first-line {}  /* a=0 b=0 c=0 d=2 -> specificity = 0,0,0,2 */
+     ul li         {}  /* a=0 b=0 c=0 d=2 -> specificity = 0,0,0,2 */
+     ul ol+li      {}  /* a=0 b=0 c=0 d=3 -> specificity = 0,0,0,3 */
+     h1 + *[rel=up]{}  /* a=0 b=0 c=1 d=1 -> specificity = 0,0,1,1 */
+     ul ol li.red  {}  /* a=0 b=0 c=1 d=3 -> specificity = 0,0,1,3 */
+     li.red.level  {}  /* a=0 b=0 c=2 d=1 -> specificity = 0,0,2,1 */
+     #x34y         {}  /* a=0 b=1 c=0 d=0 -> specificity = 0,1,0,0 */
+     style=""          /* a=1 b=0 c=0 d=0 -> specificity = 1,0,0,0 */
+    <HEAD>
+    <STYLE type="text/css">
+      #x97z { color: red }
+    </STYLE>
+    </HEAD>
+    <BODY>
+    <P ID=x97z style="color: green">
+    </BODY>
+````
+
+In the above example, the color of the P element would be green. The declaration in the "style" attribute will override the one in the STYLE element because of cascading rule 3, since it has a higher specificity.
+---------------
+In general, and easy way to remember this is simple:
+
+1) inline styles always win
+2) The presence of an ID turns the race into a "race of who has the most IDs". The rest only applies if it's a tie
+3) The presence of an attribute or a pseudo-class turns the race into a race of "who has the most attributes OR [pseudo-classes](https://developer.mozilla.org/en-US/docs/Web/CSS/pseudo-classes)". The rest only applies if it's a tie
+4) If none of the above is there, or all of the above is a tie, whoever has the highest number of elements or [pseudo-elements](https://developer.mozilla.org/en/docs/Web/CSS/Pseudo-elements) wins.
+
+### Styles
+
+Styling in Polymer is done using CSS. Two extra options are available: `custom-style` style elements, and shared styles.
+
+#### Using `<style is="custom-style">`
+
+Instead of using `<style>` as it is, in Polymer you should use  `<style is="custom-style">`.
+**`custom-style` should only be used for defining document styles, outside of a custom element’s local DOM.**
+Using it will make sure that rules will not affect the elements' local DOM. You will also be able to use the `:root` selector.
+
+##### Pseudo-CSS files with `custom-style`
+
+`custom-style` can be used to create pseudo-css files -- that is, html file that can be included and that only define a stylesheet.
+
+E.g. the file `app-theme.html` might contain:
+
+    <link rel="import" href="../bower_components/polymer/polymer.html">
+    <link rel="import" href="../bower_components/paper-styles/typography.html">
+
+    <style is="custom-style">
+
+      :root {
+        --primary-text-color: #212121;
+        --primary-background-color: #ffffff;
+      }
+
+      h1 {
+        @apply(--paper-font-display2)
+      }
+    </style>
+
+
+Then, `index.html` might load it:
+
+    <!doctype html>
+    <html lang="en">
+    <head>
+    ...
+    <link rel="import" href="app-theme.html">
+    ...
+    </head>
+    ...
+
+##### Inline CSS with `<style is="custom-style">`
+
+You can also add in-line CSS in your file:
+
+    <!doctype html>
+    <html lang="en">
+    <head>
+    ...
+    <link rel="import" href="app-theme.html">
+    <style is="custom-style">
+      :root {
+        --primary-text-color: #212121;
+      }
+    </style>
+    ...
+    </head>
+    ...
+
+#### Shared CSS rules with `<style include="shared-styles" [is="custom-style"] >`
+
+You can create an html file that contains styles, but they are _not_ applied straight away.
+You do that by wrapping the styles in a module:
+
+    <!-- shared-styles.html -->
+    <dom-module id="shared-styles">
+      <template>
+        <style>
+          .red { color: red; }
+        </style>
+      </template>
+    </dom-module>
+
+The id attribute specifies the name you’ll use to reference your shared styles. Style module names use the same namespace as elements, so your style modules must have unique names.
+
+Note that in this case importing the file _won't_ apply the styles. However, it will obviously load the module. To activate the styles, you will need to use the `include` attribute to the `<style>` element.
+
+The `include` attribute will work within an element (just using `<style>`):
+
+    <!-- import the module  -->
+    <link rel="import" href="../shared-styles/shared-styles.html">
+    <dom-module id="x-foo">
+      <template>
+        <!-- include the style module by name -->
+        <style include="shared-styles"></style>
+        <style>:host { display: block; }</style>
+        Hi
+      </template>
+      <script>Polymer({is: 'x-foo'});</script>
+    </dom-module>
+
+And defining local styles (with higher priority):
+
+    <!-- import the module  -->
+    <link rel="import" href="../shared-styles/shared-styles.html">
+    <dom-module id="x-foo">
+      <template>
+        <!-- include the style module by name AND define local styles-->
+        <style include="shared-styles">
+          :host {
+            display: block;
+          }
+        </style>
+        Hi
+      </template>
+      <script>Polymer({is: 'x-foo'});</script>
+    </dom-module>
+
+You can use  `include` also in a file, outside an element:
+
+    <!-- import the shared styles  -->
+    <link rel="import" href="../shared-styles/shared-styles.html">
+    <!-- include the shared styles -->
+    <style is="custom-style" include="shared-styles"></style>
+
+And defining local styles (with higher priority):
+
+    <!-- import the shared styles  -->
+    <link rel="import" href="../shared-styles/shared-styles.html">
+    <!-- include the shared styles -->
+    <style is="custom-style" include="shared-styles">
+      :host {
+        display: block;
+      }
+    </style>
+
+
+
+### Anything else
+
+For anything else, have a look at [my rewrite of Polymer's styling guide](https://github.com/mercmobily/docs/blob/betterstyling/1.0/docs/devguide/styling.md).
 
 
 ## Events
+
+
 
 ## Data binding
 
