@@ -2,9 +2,7 @@
 
 This sums up Polymer's developers guide. To "know" Polymer you should know everything here 100%, and all of the API calls by heart.
 
-TODO:
-- Talk about decorator patterns:
-  https://github.com/Polymer/polymer/issues/1990
+**TODO: Talk about decorator patterns: https://github.com/Polymer/polymer/issues/1990**
 
 ## Overview
 
@@ -200,8 +198,8 @@ Note: you mustn't redefine a Polymer component's `createdCallback()`, `attachedC
 
 ### Initialization order and timing {#initialization-order}
 
-WATCH: https://github.com/Polymer/docs/issues/1456
-APPLY EXTRA WRITING: https://github.com/Polymer/docs/pull/1506
+**TODO: APPLY EXTRA WRITING: https://github.com/Polymer/docs/pull/1506  AND ALSO WATCH: https://github.com/Polymer/docs/issues/1456 TO CHECK**
+
 
 The element's basic initialization order for a given element is:
 
@@ -254,8 +252,7 @@ the `attached` callback:
 
 ### Static attributes on host
 
-If a custom element needs HTML attributes set on it at create-time, the attributes may be declared in a `hostAttributes` property on the prototype, where keys are the attribute names and values are the values to be assigned. Values should typically be provided as strings, as HTML attributes can only be strings;
-however, the standard `serialize` method is used to convert values to strings, so `true` will serialize to an empty attribute, and `false` will result in no attribute set, and so forth (see [Attribute serialization](properties.html#attribute-serialization) for more details).
+If a custom element needs HTML attributes set on it at create-time, the attributes may be declared in a `hostAttributes` property on the prototype, where keys are the attribute names and values are the values to be assigned. Values should typically be provided as strings, as HTML attributes can only be strings; however, the standard `serialize` method is used to convert values to strings, so `true` will serialize to an empty attribute, and `false` will result in no attribute set, and so forth (see [Attribute serialization](properties.html#attribute-serialization) for more details).
 
 Example:
 
@@ -456,7 +453,7 @@ The arguments received by the computing function match those described in the se
 
 ### Reflect from property to attribute
 
-Remember how **setting the HTML attribute for the element will set the corresponding property in the element.** This is true especially so that when defining elements declarative, e.g. `<my-element surname="Mobilyy">`, the `surname` property of the element is _also_ set to `Mobily` (and the property will be cast appropriatedly depending on the `type` of the property).
+Remember how **setting the HTML attribute for the element will set the corresponding property in the element.** This is true especially so that when defining elements declarative, e.g. `<my-element surname="Mobily">`, the `surname` property of the element is _also_ set to `Mobily` (and the property will be cast appropriatedly depending on the `type` of the property).
 
 In specific cases, it may be useful to keep an HTML attribute value in sync with a property value. This may be achieved by setting `reflectToAttribute: true` on a property in the `properties` configuration object. This will cause any change to the property to be serialized out to an attribute of the same name.
 
@@ -700,9 +697,10 @@ Keeping this in mind `changeRecord` will have:
   * `added`. Array of added keys.
   * `removed`. Array of removed keys.
 
-NOTE: This seems wrong, and I couldn't work out what is "right". Documentation seems totally wrong, and even the basic example doesn't work. Ticket open:  https://github.com/Polymer/polymer/issues/3239 (Arrays not working)
-
 Note that I used `this.push()` to push into the array: Polymer has the equivalent of the splices functions in Javascript, with the bonus that the registered observer will actually get called.
+
+**TODO: FIX THIS . This seems wrong, and I couldn't work out what is "right". Documentation seems totally wrong, and even the basic example doesn't work. Ticket open:  https://github.com/Polymer/polymer/issues/3239 (Arrays not working)**
+
 
 ## Local DOM
 
@@ -829,9 +827,11 @@ Here are the functions that deal with figuring out what modes in the light DOM w
 
 * `Polymer.dom(node).getDestinationInsertionPoints()` -- given an element in the local DOM, it will return the `<content>` element in the local DOM that distributed it. Useless because it's really hardly ever used.
 
-* `this.getContentChildNodes(contentSelector)` -- Given a selector for a `<content>` element in the local DOM, it will return the child nodes (including space node etc.!)
+* `this.getContentChildNodes(contentSelector)` -- Given a selector for a `<content>` element in the local DOM, it will return the child nodes (including spaces etc.!) Uselese because it returns _all_ nodes, including text nodes!
 
 * `this.getContentChildren(contentSelector)` -- Given a selector for a `<content>` element in the local DOM, it will return the children elements. **The most useful function for distributed children!**
+
+**TODO: Create code example for this to onclude ALL of these at once**
 
 #### Effective children
 
@@ -882,12 +882,14 @@ Here is a very practical example:
 
 Note that using `getContentChildren()` would have achieved the same result:
 
+````javascript
     // ...childCount
     attached: function(){
       this.childCount = this.getContentChildren('#c').length;
     }
+````
 
-Since it will return all of the nodes in the `<content>` tags with id `c`.
+Since it will return all of the nodes in the `<content>` tag with id `c`.
 
 There are some cases where they are not equivalent and you cannot use `getContentChildren()`:
 
@@ -1227,17 +1229,155 @@ And defining local styles (with higher priority):
     </style>
 
 
-
 ### Anything else
 
-For anything else, have a look at [my rewrite of Polymer's styling guide](https://github.com/mercmobily/docs/blob/betterstyling/1.0/docs/devguide/styling.md).
+**TODO: FIX this chapter following [my rewrite of Polymer's styling guide](https://github.com/mercmobily/docs/blob/betterstyling/1.0/docs/devguide/styling.md).**
 
 
 ## Events
 
-
+AS IS IN OFFICIAL DOCUMENTATION
 
 ## Data binding
+
+### Data binding basics
+
+    <dom-module id="host-element">
+        <template>
+          <child-element childName="{{hostName}}"></child-element>
+        </template>
+    </dom-module>
+
+**When there is an `{{annotation}}`, Polymer treats this things in a special way: child-element's _property_ hostName, and not its _attribute_, is bound to the host's `hostName` property**
+
+This will do the following:
+
+* **Setup**. `host-element` will assign the host's `hostName` property to the child's `childName` property
+
+* **`child-element`** It will listen for the event `hostName-changed` from `host-element`. When it happens, it will assign `e.detail.value` to its own (child-element's) `childName` property.
+  * **EXCEPT**: If `child-element`'s property is read-only. In which case, any further changes to `hostName` aren't reflected onto the child
+
+* **`host-element`** It will listen for the event `childName-changed` in `child-element`. When it happens, it will assign `e.detail.value` to `hostName`
+  *  **EXCEPT** If `child-element`'s `notify` is off. In this case, `childName-changed` will never be generated
+  *  **EXCEPT** If `[[ ]]` were used instead of `{{}}` -- in which case listening doesn't happen at all
+  *  **EXCEPT** If you are doing compound binding, e.g. `<child-element childName="AH! {{hostName}}"></child-element>`
+  *  **EXCEPT** If you are doing computed binding, e.g. `<child-element childName="_f({{hostName}})"></child-element>`
+  *  **EXCEPT** If you are doing attribute binding, e.g. `<child-element childName$="{{hostName}}"></child-element>`
+
+* **NOTE**: You can decide what event the `child-element` will listen to
+
+### Custom event names
+
+Sometimes, especially when dealing with standard HTML elements, you need to listen to specific events, rather than `variableName-changed`. You can do this:
+
+    <dom-module id="host-element">
+
+      <template>
+        <p>Hello {{myName}}</p>
+
+        <input id='ME' value="{{myName::input}}">
+    </dom-module>
+
+In this case, `host-element` will initially assign `myName` to input`'s `value`. Then, it will listen to the event `input` from the element `input` -- and reflect `e.value` back to `host-element`'s `myName`.
+
+### Binding to text content
+
+You can also bind to text content from `host-element`:
+
+    <template>
+       First: {{firstName}}<br>
+       Last: {{lastName}}
+     </template>
+
+In this case, there is a 1-way direct binding between `host-element`'s properties and the template's contents.
+
+# Expressions in binding annotations
+
+Currently there’s no general support for expressions in binding annotations. The two exceptions are:
+
+1) Negation using `!`:. For example: `<template><div hidden="{{!enabled}}"></div></template>`
+2) Computed bindings
+3) Compound bindings
+
+### Computed bindings
+
+You can define a function that will be called to compute a value.
+
+**Computed binding is always one-way**
+
+    <dom-module id="host-element">
+      <template>
+        My name is <span>{{computeFullName(first, last)}}</span>
+      </template>
+      <script>
+        Polymer({
+          is: 'host-element',
+          properties: {
+            first: String,
+            last: String
+          },
+          computeFullName: function(first, last) {
+            return first + ' ' + last;
+          }
+        });
+      </script>
+    </dom-module>
+
+If a computed binding has no dependent properties (e.g. `<span>{{randomNumber()}} `), it is only evaluated once.
+
+Finally, if you have to pass a literal value as a parameter, make sure you escape any comma `,` with `\,`.
+
+
+### Binding to attributes (Annotated attribute binding)
+
+**Annotated attribute binding is always one-way**
+
+In the vast majority of cases, binding data to other elements should use property binding described above, where changes are propagated by setting the new value to the JavaScript property on the element. However, sometimes you need to set an attribute on an element, as opposed to a property. These include when attribute selectors are used for CSS or for interoperability with elements that require using an attribute-based API. To bind to an attribute, use `$=` rather than `=`. This results in a call to: `element.setAttribute(attr, value);` as opposed to: `element.property = value;`
+
+    <template>
+      <!-- Attribute binding -->
+      <my-element selected$="{{value}}"></my-element>
+      <!-- results in <my-element>.setAttribute('selected', this.value); -->
+
+      <!-- Property binding -->
+      <my-element selected="{{value}}"></my-element>
+      <!-- results in <my-element>.selected = this.value; -->
+
+    </template>
+
+Values are serialized according to the value’s current type, like for attribute serialization. Again, as values must be serialized to strings when binding to attributes, it is always more performant to use property binding for pure data propagation.
+
+#### Special cases: when bind to attributes
+
+There are a handful of extremely common native element attributes which can also be modified as properties. Due to cross-browser limitations with the ability to place binding braces {{...}} in some of these attribute values, as well as the fact that some of these attributes map to differently named JavaScript properties, it is recommended to always use attribute binding (using $=) when binding dynamic values to these specific attributes, rather than binding to their property names.
+
+Normal attribute assignment to static values:
+
+    <!-- class -->
+    <div class="foo"></div>
+    <!-- style -->
+    <div style="background: red;"></div>
+    <!-- href -->
+    <a href="http://foo.com">
+    <!-- label for -->
+    <label for="bar"></label>
+    <!-- dataset -->
+    <div data-bar="baz"></div>
+
+Attribute binding to dynamic values (use `$=`):
+
+    <!-- class -->
+    <div class$="{{foo}}"></div>
+    <!-- style -->
+    <div style$="{{background}}"></div>
+    <!-- href -->
+    <a href$="{{url}}">
+    <!-- label for -->
+    <label for$="{{bar}}"></label>
+    <!-- dataset -->
+    <div data-bar$="{{baz}}"></div>
+
+**TODO: Include path bindings here, once the array binding dilemma is resolved and observers on paths is practiced**
 
 https://github.com/Polymer/polymer/issues/2122
 
@@ -1245,10 +1385,28 @@ https://github.com/Polymer/polymer/issues/2127
 
 ## Behaviours
 
-
+AS IS IN OFFICIAL DOCUMENTATION
 
 ## Utility function
 
+AS IS IN OFFICIAL DOCUMENTATION
+
+**TODO: Check that API is completely committed to memory**
+
 ## Global settings
 
-## Browser compatibility
+AS IS IN OFFICIAL DOCUMENTATION
+
+**TODO: Memorise how to use shadow DOM
+
+## Experiental features
+
+AS IS IN OFFICIAL DOCUMENTATION
+
+**TODO: Check that this is fully understood, memorised, and tested**
+
+## API REFERENCE
+
+AS IS IN OFFICIAL DOCUMENTATION
+
+**TODO: Check that API is completely committed to memory**
